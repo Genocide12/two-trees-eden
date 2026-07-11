@@ -1,0 +1,16 @@
+{
+  "name": "two-trees-eden-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Telegram bot for Two Trees: Eden — stoic strategy game of God and Evil.",
+  "main": "bot.mjs",
+  "scripts": {
+    "start": "node bot.mjs",
+    "dev": "node --watch bot.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
