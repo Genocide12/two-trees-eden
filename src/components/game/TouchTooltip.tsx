@@ -10,26 +10,21 @@ interface Props {
   className?: string;
   /** Delay in ms before tooltip opens on long-press (mobile). */
   longPressMs?: number;
-  /** How long the tooltip stays open after touch release (ms). */
-  touchHoldMs?: number;
+  /** How long the tooltip stays open after touch release (ms).
+   *  Default 150ms — closes almost immediately after finger lifts. */
+  touchCloseMs?: number;
 }
 
 /**
  * Tooltip that works on both desktop (hover) and mobile (long-press).
  *
- * Implementation notes:
- * - We use a controlled Tooltip with our own `open` state.
- * - For desktop hover: Radix fires `onOpenChange` on pointerenter/leave,
- *   we honor it (only when no touch is active).
- * - For mobile touch: we attach NATIVE touchstart/touchend/touchmove
- *   listeners via useEffect + addEventListener (React's onTouchStart
- *   synthetic events don't always fire reliably on long-press).
- * - Long-press timer (default 400ms) opens the tooltip.
- * - On touchend, tooltip stays open for `touchHoldMs` (default 4000ms)
- *   so the user can read it.
- * - On touchmove (scrolling), we cancel the long-press.
- * - We also use CSS `touch-action: manipulation` to prevent double-tap zoom
- *   and `user-select: none` to prevent text selection on long-press.
+ * Mobile behavior:
+ *   - touchstart → start long-press timer (400ms)
+ *   - if timer fires → open tooltip
+ *   - touchend → close tooltip almost immediately (touchCloseMs, default 150ms)
+ *   - touchmove (scroll) → cancel long-press, close tooltip
+ *
+ * Tooltip uses Radix collision detection so it stays in viewport.
  */
 export default function TouchTooltip({
   children,
@@ -37,7 +32,7 @@ export default function TouchTooltip({
   side = 'top',
   className = '',
   longPressMs = 400,
-  touchHoldMs = 5000,
+  touchCloseMs = 150,
 }: Props) {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -56,8 +51,6 @@ export default function TouchTooltip({
     }
   }, []);
 
-  // Attach native touch listeners (more reliable than React's onTouchStart
-  // for long-press scenarios).
   useEffect(() => {
     const el = triggerRef.current;
     if (!el) return;
@@ -73,20 +66,21 @@ export default function TouchTooltip({
     };
 
     const onTouchEnd = () => {
+      // Cancel long-press timer if still running
       if (longPressTimer.current) {
         clearTimeout(longPressTimer.current);
         longPressTimer.current = null;
       }
-      // If tooltip opened by long-press, keep it open for reading
-      // (will be closed by closeTimer or by tap elsewhere)
+      // Close almost immediately (150ms) so user sees the tooltip flicker
+      // but it doesn't linger after they lift their finger.
       closeTimer.current = setTimeout(() => {
         setOpen(false);
         touchActive.current = false;
-      }, touchHoldMs);
+      }, touchCloseMs);
     };
 
     const onTouchMove = () => {
-      // User is scrolling — cancel long-press
+      // User is scrolling — cancel long-press and close
       clearAll();
       setOpen(false);
       touchActive.current = false;
@@ -103,17 +97,14 @@ export default function TouchTooltip({
       el.removeEventListener('touchmove', onTouchMove);
       el.removeEventListener('touchcancel', onTouchMove);
     };
-  }, [longPressMs, touchHoldMs, clearAll]);
+  }, [longPressMs, touchCloseMs, clearAll]);
 
-  // Cleanup on unmount
   useEffect(() => () => clearAll(), [clearAll]);
 
   return (
     <Tooltip
       open={open}
       onOpenChange={(v) => {
-        // Ignore openChange from Radix while touch is active — we drive
-        // open state ourselves for touch.
         if (touchActive.current) return;
         setOpen(v);
       }}
@@ -135,9 +126,12 @@ export default function TouchTooltip({
       </TooltipTrigger>
       <TooltipContent
         side={side}
-        className="max-w-[220px] text-xs leading-relaxed bg-card border-[#c9a85a]/30 pointer-events-none"
+        align="center"
+        // collisionPadding keeps tooltip inside viewport on small screens
+        collisionPadding={16}
         // Avoid the tooltip closing on pointer leave (we manage state ourselves)
         onPointerDownOutside={(e) => e.preventDefault()}
+        className="max-w-[240px] text-xs leading-relaxed bg-card border-[#c9a85a]/40 shadow-lg pointer-events-none z-50"
       >
         {content}
       </TooltipContent>
