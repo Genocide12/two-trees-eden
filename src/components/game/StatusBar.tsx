@@ -1,5 +1,9 @@
 'use client';
 
+// Tailwind safelist — these classes are referenced via props (not detected
+// by Tailwind's static scanner). Listing them here ensures they get generated.
+// safelist: bg-foreground/70 bg-foreground/60 bg-[#c9a85a] bg-[#c45656] text-foreground/70 text-foreground/60 text-[#c9a85a] text-[#c45656] text-muted-foreground
+
 import { useGame } from '@/lib/game/store';
 import { tr } from '@/lib/game/i18n';
 import { motion } from 'framer-motion';
@@ -9,7 +13,7 @@ import {
 } from 'lucide-react';
 import TouchTooltip from './TouchTooltip';
 
-function Bar({ value, label, desc, icon, color }: { value: number; label: string; desc: string; icon: React.ReactNode; color: string }) {
+function Bar({ value, label, desc, icon, textColor, barColor }: { value: number; label: string; desc: string; icon: React.ReactNode; textColor: string; barColor: string }) {
   return (
     <TouchTooltip
       side="top"
@@ -24,14 +28,14 @@ function Bar({ value, label, desc, icon, color }: { value: number; label: string
       <div className="space-y-1">
         <div className="flex items-center justify-between text-[11px] md:text-xs">
           <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span className={color}>{icon}</span>
+            <span className={textColor}>{icon}</span>
             <span>{label}</span>
           </div>
           <span className="text-foreground/80 tabular-nums">{value}</span>
         </div>
         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
           <motion.div
-            className={`h-full rounded-full ${color.replace('text-', 'bg-')}`}
+            className={`h-full rounded-full ${barColor}`}
             initial={false}
             animate={{ width: `${value}%` }}
             transition={{ duration: 0.6 }}
@@ -98,10 +102,10 @@ export default function StatusBar() {
           desc={tr('ui.humanity.desc', lang)}
           color="text-muted-foreground"
         />
-        <Bar value={state.humanity.population} label={tr('hum.population', lang)} desc={tr('hum.population.desc', lang)} icon={<Users className="w-3.5 h-3.5" />} color="text-foreground/70" />
-        <Bar value={state.humanity.righteousness} label={tr('hum.righteousness', lang)} desc={tr('hum.righteousness.desc', lang)} icon={<Heart className="w-3.5 h-3.5" />} color="text-[#c9a85a]" />
-        <Bar value={state.humanity.corruption} label={tr('hum.corruption', lang)} desc={tr('hum.corruption.desc', lang)} icon={<Skull className="w-3.5 h-3.5" />} color="text-[#c45656]" />
-        <Bar value={state.humanity.knowledge} label={tr('hum.knowledge', lang)} desc={tr('hum.knowledge.desc', lang)} icon={<BookOpen className="w-3.5 h-3.5" />} color="text-foreground/60" />
+        <Bar value={state.humanity.population} label={tr('hum.population', lang)} desc={tr('hum.population.desc', lang)} icon={<Users className="w-3.5 h-3.5" />} textColor="text-foreground/70" barColor="bg-foreground/70" />
+        <Bar value={state.humanity.righteousness} label={tr('hum.righteousness', lang)} desc={tr('hum.righteousness.desc', lang)} icon={<Heart className="w-3.5 h-3.5" />} textColor="text-[#c9a85a]" barColor="bg-[#c9a85a]" />
+        <Bar value={state.humanity.corruption} label={tr('hum.corruption', lang)} desc={tr('hum.corruption.desc', lang)} icon={<Skull className="w-3.5 h-3.5" />} textColor="text-[#c45656]" barColor="bg-[#c45656]" />
+        <Bar value={state.humanity.knowledge} label={tr('hum.knowledge', lang)} desc={tr('hum.knowledge.desc', lang)} icon={<BookOpen className="w-3.5 h-3.5" />} textColor="text-foreground/60" barColor="bg-foreground/60" />
       </div>
 
       {/* Player resources */}
