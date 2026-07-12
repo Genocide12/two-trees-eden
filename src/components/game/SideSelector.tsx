@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
+import EpochIllustration from './EpochIllustration';
 
 export default function SideSelector() {
   const lang = useGame((s) => s.lang);
@@ -21,6 +22,16 @@ export default function SideSelector() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
+      {/* Eden illustration — hero image above title */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="mb-6"
+      >
+        <EpochIllustration epochId="eden" size="lg" />
+      </motion.div>
+
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}

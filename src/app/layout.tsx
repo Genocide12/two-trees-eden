@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -18,6 +18,12 @@ export const metadata: Metadata = {
   description: "A stoic strategy game of two sides — Light and Darkness — across seven epochs of the world.",
   keywords: ["Two Trees", "Eden", "strategy game", "philosophy", "stoic", "Light vs Darkness"],
   authors: [{ name: "Two Trees" }],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Two Trees: Eden",
+  },
   openGraph: {
     title: "Two Trees: Eden",
     description: "A stoic strategy game of God and Evil across seven epochs.",
@@ -31,6 +37,14 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: "#c9a85a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -39,7 +53,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <head>
-        {/* Telegram WebApp SDK — loaded from Telegram's CDN when opened inside Telegram */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <script
           src="https://telegram.org/js/telegram-web-app.js"
           async
@@ -51,6 +66,17 @@ export default function RootLayout({
       >
         {children}
         <Toaster />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

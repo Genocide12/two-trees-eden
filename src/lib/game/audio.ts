@@ -268,8 +268,10 @@ class AudioEngine {
   }
 
   // ─────────────────────────────────────────────────────────────────────
-  // Background music — procedural ambient pad
+  // Background music — procedural ambient pad with melodic phrases
   // ─────────────────────────────────────────────────────────────────────
+
+  private musicSchedulerId: ReturnType<typeof setInterval> | null = null;
 
   startMusic(side: Side) {
     if (!this.ctx || !this._initialized) return;
@@ -279,26 +281,25 @@ class AudioEngine {
 
     const t = this.now();
     const N = AudioEngine.N;
-    const freqs = side === 'light'
+
+    // ── Pad: thick chord (sustained background) ──
+    const padFreqs = side === 'light'
       ? [N.C3, N.E3, N.G3, N.B3, N.E4, N.G4]  // Cmaj7 — warm, open
       : [N.C3, N.Eb3, N.G3, N.Bb3, N.Eb4, N.G4];  // Cm7 — dark, tense
 
-    // Each oscillator is a slowly detuned sine for a thick pad
-    for (const f of freqs) {
-      const o = this.ctx.createOscillator();
+    for (const f of padFreqs) {
+      const o = this.ctx!.createOscillator();
       o.type = 'sine';
       o.frequency.value = f;
-      // very slow detune for movement
       o.detune.value = (Math.random() - 0.5) * 12;
 
-      const g = this.ctx.createGain();
+      const g = this.ctx!.createGain();
       g.gain.value = 0;
-      g.gain.setTargetAtTime(0.16 / freqs.length, t + 0.1, 1.5);
+      g.gain.setTargetAtTime(0.12 / padFreqs.length, t + 0.1, 1.5);
 
-      // low-pass filter to keep it soft
-      const filter = this.ctx.createBiquadFilter();
+      const filter = this.ctx!.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = side === 'light' ? 1200 : 600;
+      filter.frequency.value = side === 'light' ? 1400 : 700;
       filter.Q.value = 0.5;
 
       o.connect(filter);
@@ -308,7 +309,7 @@ class AudioEngine {
       this.musicNodes.push(o, g, filter);
     }
 
-    // Slow LFO modulating the master music gain for a breathing effect
+    // ── Slow LFO for breathing effect ──
     this.musicLfo = this.ctx.createOscillator();
     this.musicLfo.type = 'sine';
     this.musicLfo.frequency.value = side === 'light' ? 0.08 : 0.05;
@@ -319,14 +320,59 @@ class AudioEngine {
     this.musicLfo.start(t);
     this.musicNodes.push(this.musicLfo, lfoGain);
 
+    // ── Melodic phrases: schedule a new phrase every 8-12 seconds ──
+    // Light: ascending major arpeggios, bell-like
+    // Dark: descending minor clusters, low rumbles
+    const lightPhrases: number[][] = [
+      [N.C5, N.E5, N.G5, N.C6, N.G5, N.E5],
+      [N.G4, N.B4, N.D5, N.G5, N.D5, N.B4],
+      [N.E4, N.G4, N.C5, N.E5, N.C5, N.G4],
+      [N.C5, N.G4, N.E5, N.C5, N.G5, N.E5],
+    ];
+    const darkPhrases: number[][] = [
+      [N.C3, N.Eb3, N.G3, N.Bb3, N.G3, N.Eb3],
+      [N.G3, N.Bb3, N.Db4, N.Eb4, N.Db4, N.Bb3],
+      [N.C3, N.F3, N.Ab3, N.C4, N.Ab3, N.F3],
+      [N.Eb3, N.G3, N.Bb3, N.Eb4, N.Bb3, N.G3],
+    ];
+    const phrases = side === 'light' ? lightPhrases : darkPhrases;
+    let phraseIdx = 0;
+
+    const schedulePhrase = () => {
+      if (!this.ctx || !this._initialized || this.musicPlaying !== side) return;
+      const pt = this.now() + 0.05;
+      const phrase = phrases[phraseIdx % phrases.length];
+      phraseIdx++;
+      const stepMs = side === 'light' ? 600 : 800;
+      phrase.forEach((f, i) => {
+        if (side === 'light') {
+          // Bell-like tones
+          this.bell(f, pt + (i * stepMs) / 1000, 1.2, 0.10, 'light');
+        } else {
+          // Soft minor tones
+          this.bell(f, pt + (i * stepMs) / 1000, 1.4, 0.08, 'dark');
+        }
+      });
+    };
+
+    // Schedule first phrase after 3s, then every 9-12s
+    setTimeout(schedulePhrase, 3000);
+    this.musicSchedulerId = setInterval(() => {
+      schedulePhrase();
+    }, side === 'light' ? 9000 : 11000);
+
     // Fade in
-    this.musicGain!.gain.setTargetAtTime(this._musicEnabled ? 0.18 : 0, t, 1.2);
+    this.musicGain!.gain.setTargetAtTime(this._musicEnabled ? 0.22 : 0, t, 1.2);
   }
 
   stopMusic() {
     if (!this.ctx || !this.musicGain) return;
     const t = this.now();
     this.musicGain.gain.setTargetAtTime(0, t, 0.8);
+    if (this.musicSchedulerId) {
+      clearInterval(this.musicSchedulerId);
+      this.musicSchedulerId = null;
+    }
     const nodesToStop = this.musicNodes;
     setTimeout(() => {
       for (const n of nodesToStop) {

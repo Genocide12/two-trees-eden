@@ -10,6 +10,8 @@ import Chronicle from '@/components/game/Chronicle';
 import EventPrompt from '@/components/game/EventPrompt';
 import GameOver from '@/components/game/GameOver';
 import VoicePicker from '@/components/game/VoicePicker';
+import InstallButton from '@/components/game/InstallButton';
+import EpochIllustration from '@/components/game/EpochIllustration';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
@@ -137,6 +139,7 @@ export default function Page() {
               <Info className="w-4 h-4 md:mr-1" />
               <span className="hidden md:inline text-xs">{tr('ui.how_to_play', lang)}</span>
             </Button>
+            <InstallButton />
             <VoicePicker />
             <Button
               variant="ghost"
@@ -210,6 +213,10 @@ export default function Page() {
             <p className="text-xs text-muted-foreground italic mb-3 leading-snug">
               {tr(`epoch.${state.epoch}.desc`, lang)}
             </p>
+            {/* Epoch illustration — centered, fades in on epoch change */}
+            <div className="flex justify-center mb-3">
+              <EpochIllustration epochId={state.epoch} size="md" />
+            </div>
             <ActionPanel />
           </Card>
         </motion.div>
