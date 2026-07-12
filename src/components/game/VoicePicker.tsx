@@ -12,42 +12,42 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Mic2 } from 'lucide-react';
+import { Mic2, Cloud, Volume2 } from 'lucide-react';
 
 export default function VoicePicker() {
   const lang = useGame((s) => s.lang);
-  const setVoice = useGame((s) => s.setVoice);
-  const voiceRu = useGame((s) => s.voiceRu);
-  const voiceEn = useGame((s) => s.voiceEn);
   const initAudio = useGame((s) => s.initAudio);
   const [open, setOpen] = useState(false);
+  const [useServer, setUseServer] = useState(true);
   const [voicesRu, setVoicesRu] = useState<SpeechSynthesisVoice[]>([]);
   const [voicesEn, setVoicesEn] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     if (!open) return;
-    // Load voices when dialog opens
-    let attempts = 0;
-    const load = () => {
+    // Defer setState to next tick to avoid cascading renders warning
+    const t = setTimeout(() => {
       tts.init();
       setVoicesRu(tts.getVoicesForLang('ru'));
       setVoicesEn(tts.getVoicesForLang('en'));
-      attempts++;
-      if (voicesRu.length === 0 && attempts < 5) {
-        setTimeout(load, 300);
-      }
-    };
-    load();
+    }, 0);
+    return () => clearTimeout(t);
   }, [open]);
 
-  const handlePick = (langCode: 'ru' | 'en', name: string) => {
+  const handlePickWebVoice = (langCode: 'ru' | 'en', name: string) => {
     initAudio();
-    setVoice(langCode, name);
-    // Preview the voice
-    const sample = langCode === 'ru'
-      ? 'Да будет свет. И стал свет.'
-      : 'Let there be light. And there was light.';
+    tts.setVoice(langCode, name);
+    tts.setUseServerTts(false);
+    setUseServer(false);
+    const sample = langCode === 'ru' ? 'Да будет свет.' : 'Let there be light.';
     tts.speak(sample, langCode, { rate: 0.95 }, true);
+  };
+
+  const handlePickServer = () => {
+    initAudio();
+    tts.setUseServerTts(true);
+    setUseServer(true);
+    const sample = lang === 'ru' ? 'Да будет свет. И стал свет.' : 'Let there be light.';
+    tts.speak(sample, lang, { rate: 0.95 }, true);
   };
 
   return (
@@ -70,35 +70,57 @@ export default function VoicePicker() {
             {lang === 'ru' ? 'Голос озвучки' : 'Narration voice'}
           </DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {lang === 'ru'
-              ? 'Выбери голос для озвучки важных событий. Список зависит от браузера и ОС. Если русский голос плохой — попробуй Chrome или Edge, или установи дополнительные голоса в системе.'
-              : 'Choose a voice for narrating important events. The list depends on your browser and OS. If Russian voice sounds bad — try Chrome or Edge, or install additional system voices.'}
-          </p>
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+          {/* Server TTS option */}
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+              <Cloud className="w-3 h-3" />
+              {lang === 'ru' ? 'Серверный голос (рекомендуется)' : 'Server voice (recommended)'}
+            </Label>
+            <button
+              onClick={handlePickServer}
+              className={`w-full text-left px-3 py-2.5 rounded text-xs border transition-all ${
+                useServer
+                  ? 'border-[#c9a85a] bg-[#c9a85a]/10 text-[#c9a85a]'
+                  : 'border-border hover:border-[#c9a85a]/40 hover:bg-muted/40'
+              }`}
+            >
+              <div className="font-serif flex items-center gap-2">
+                <Volume2 className="w-3.5 h-3.5" />
+                {lang === 'ru' ? 'Естественный русский (онлайн)' : 'Natural Russian (online)'}
+              </div>
+              <div className="text-[10px] text-muted-foreground mt-0.5">
+                {lang === 'ru'
+                  ? 'Качественный женский голос. Требует интернет.'
+                  : 'High-quality female voice. Requires internet.'}
+              </div>
+            </button>
+          </div>
 
-          {/* Russian voice */}
+          <div className="border-t border-border/40 pt-3">
+            <p className="text-[10px] text-muted-foreground/70 italic mb-2">
+              {lang === 'ru'
+                ? 'Или выбери голос браузера (офлайн, качество зависит от ОС):'
+                : 'Or pick a browser voice (offline, quality depends on OS):'}
+            </p>
+          </div>
+
+          {/* Browser Russian voices */}
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Русский голос
+              {lang === 'ru' ? 'Браузерные русские голоса' : 'Browser Russian voices'}
             </Label>
             {voicesRu.length === 0 ? (
               <p className="text-xs text-muted-foreground italic">
-                {lang === 'ru'
-                  ? 'Русские голоса не найдены в этом браузере.'
-                  : 'No Russian voices found in this browser.'}
+                {lang === 'ru' ? 'Не найдены в этом браузере.' : 'None found in this browser.'}
               </p>
             ) : (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="space-y-1 max-h-40 overflow-y-auto">
                 {voicesRu.map((v) => (
                   <button
                     key={v.name}
-                    onClick={() => handlePick('ru', v.name)}
-                    className={`w-full text-left px-3 py-2 rounded text-xs border transition-all ${
-                      voiceRu === v.name
-                        ? 'border-[#c9a85a] bg-[#c9a85a]/10 text-[#c9a85a]'
-                        : 'border-border hover:border-[#c9a85a]/40 hover:bg-muted/40'
-                    }`}
+                    onClick={() => handlePickWebVoice('ru', v.name)}
+                    className="w-full text-left px-3 py-2 rounded text-xs border border-border hover:border-[#c9a85a]/40 hover:bg-muted/40 transition-all"
                   >
                     <div className="font-serif">{v.name}</div>
                     <div className="text-[10px] text-muted-foreground">{v.lang}</div>
@@ -108,24 +130,20 @@ export default function VoicePicker() {
             )}
           </div>
 
-          {/* English voice */}
+          {/* Browser English voices */}
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              English voice
+              English browser voices
             </Label>
             {voicesEn.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No English voices found.</p>
+              <p className="text-xs text-muted-foreground italic">None found.</p>
             ) : (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="space-y-1 max-h-40 overflow-y-auto">
                 {voicesEn.map((v) => (
                   <button
                     key={v.name}
-                    onClick={() => handlePick('en', v.name)}
-                    className={`w-full text-left px-3 py-2 rounded text-xs border transition-all ${
-                      voiceEn === v.name
-                        ? 'border-[#c9a85a] bg-[#c9a85a]/10 text-[#c9a85a]'
-                        : 'border-border hover:border-[#c9a85a]/40 hover:bg-muted/40'
-                    }`}
+                    onClick={() => handlePickWebVoice('en', v.name)}
+                    className="w-full text-left px-3 py-2 rounded text-xs border border-border hover:border-[#c9a85a]/40 hover:bg-muted/40 transition-all"
                   >
                     <div className="font-serif">{v.name}</div>
                     <div className="text-[10px] text-muted-foreground">{v.lang}</div>

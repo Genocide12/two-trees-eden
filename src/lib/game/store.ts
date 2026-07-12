@@ -177,7 +177,7 @@ export const useGame = create<GameStore>()(
           audio.setMusicEnabled(get().musicEnabled);
           tts.init();
           tts.setEnabled(get().soundEnabled);
-          // Restore previously chosen voices (from persistence)
+          // Restore previously chosen browser voices (if user picked one)
           const { voiceRu, voiceEn } = get();
           if (voiceRu) tts.setVoice('ru', voiceRu);
           if (voiceEn) tts.setVoice('en', voiceEn);
