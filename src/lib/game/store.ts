@@ -25,9 +25,6 @@ interface GameStore {
   aiThinking: boolean;
   soundEnabled: boolean;
   musicEnabled: boolean;
-  voiceRu: string | null;
-  voiceEn: string | null;
-  serverVoice: 'svetlana' | 'dmitry';
   init: (lang?: Lang) => void;
   setLang: (lang: Lang) => void;
   chooseSide: (side: Side) => void;
@@ -38,28 +35,22 @@ interface GameStore {
   runAiIfNeeded: () => void;
   toggleSound: () => void;
   toggleMusic: () => void;
-  setVoice: (lang: Lang, voiceName: string) => void;
-  setServerVoice: (key: 'svetlana' | 'dmitry') => void;
   /** Initialize audio — must be called from a user-gesture handler. */
   initAudio: () => void;
 }
 
 // AI delay increased to give TTS time to finish narrating the player's action.
-// Without this, the AI's narration interrupts the player's narration.
 const AI_DELAY_MS = 1800;
 
-// Map ending IDs to SFX
 function sfxForEnding(endingId: string) {
   if (endingId === 'saints') return 'gameover_light' as const;
   if (endingId === 'eternal_night') return 'gameover_dark' as const;
   return 'gameover_neutral' as const;
 }
 
-// Get the narrative text of the most recent log entry (for TTS)
 function lastLogText(state: GameState, lang: Lang): string | null {
   if (state.log.length === 0) return null;
   const last = state.log[state.log.length - 1];
-  // Skip system log entries that aren't action narratives
   if (last.textKey === 'log.epoch_advance') return null;
   if (last.textKey === 'log.ai_pass') return null;
   if (last.textKey.startsWith('log.side.')) return null;
@@ -75,13 +66,13 @@ export const useGame = create<GameStore>()(
           audio.playSfx('epoch_advance');
           haptics.rumble(120);
           audio.switchMusic(after.playerSide);
-          // TTS: announce epoch transition (neutral narrator)
+          // Epoch transition — spoken by player's side voice
           const lang = get().lang;
           const epochName = tr(`epoch.${after.epoch}.name`, lang);
           const tmpl = lang === 'ru'
             ? `Эпоха сменяется. Грядёт: ${epochName}.`
             : `An epoch passes. Now comes: ${epochName}.`;
-          tts.speak(tmpl, lang, { side: null });
+          tts.speak(tmpl, lang, { side: after.playerSide });
         }
       }
 
@@ -90,28 +81,29 @@ export const useGame = create<GameStore>()(
           if (after.phase === 'event') {
             audio.playSfx('event');
             haptics.impact('heavy');
-            // TTS: read the event prompt (neutral narrator)
+            // Event prompt — spoken by player's side voice
             const lang = get().lang;
             if (after.pendingEvent) {
               const prompt = tr(after.pendingEvent.promptKey, lang);
-              tts.speak(prompt, lang, { side: null });
+              tts.speak(prompt, lang, { side: after.playerSide });
             }
           } else if (after.phase === 'gameover') {
             audio.playSfx(sfxForEnding(after.endingId ?? ''));
             haptics.notify('warning');
             audio.stopMusic();
-            // TTS: speak ending title + text
-            // Voice depends on ending: saints → light (Svetlana),
-            // eternal_night → dark (Dmitry), others → neutral (default)
+            // Game over — voice depends on ending side
             const lang = get().lang;
             if (after.endingId) {
               const e = ENDINGS_BY_ID[after.endingId];
               if (e) {
                 const title = tr(e.titleKey, lang);
                 const text = tr(e.textKey, lang);
-                const endingSide: Side | null =
+                // saints → light (Svetlana), eternal_night → dark (Dmitry),
+                // others → player's side
+                const endingSide: Side =
                   after.endingId === 'saints' ? 'light' :
-                  after.endingId === 'eternal_night' ? 'dark' : null;
+                  after.endingId === 'eternal_night' ? 'dark' :
+                  after.playerSide;
                 tts.speakSequence([title, text], lang, endingSide, 400);
               }
             }
@@ -119,12 +111,11 @@ export const useGame = create<GameStore>()(
         }
       }
 
-      // Internal helper: schedule the AI move after a delay if it's the AI's turn.
       function scheduleAiIfNeeded() {
         const s = get().state;
         if (s.phase !== 'playing') return;
-        if (isPlayerTurn(s)) return; // player's turn, no AI needed
-        if (get().aiThinking) return; // already scheduled
+        if (isPlayerTurn(s)) return;
+        if (get().aiThinking) return;
 
         set({ aiThinking: true });
         setTimeout(() => {
@@ -142,9 +133,7 @@ export const useGame = create<GameStore>()(
           const afterAi = performAiTurn(current, aiAction);
           set({ state: afterAi, aiThinking: false });
 
-          // AI: haptic only, no SFX on button-press sounds.
-          // TTS speaks the AI's narrative with the AI's side voice
-          // (Light=Svetlana female, Dark=Dmitry male).
+          // AI narration — spoken by AI's side voice
           if (aiAction) {
             haptics.impact('light');
             const lang = get().lang;
@@ -170,9 +159,6 @@ export const useGame = create<GameStore>()(
         aiThinking: false,
         soundEnabled: true,
         musicEnabled: true,
-        voiceRu: null,
-        voiceEn: null,
-        serverVoice: 'svetlana',
         init: (lang = 'ru') => {
           set({ state: createInitialState(lang), lang, aiThinking: false });
         },
@@ -183,36 +169,17 @@ export const useGame = create<GameStore>()(
           audio.init();
           audio.setEnabled(get().soundEnabled);
           audio.setMusicEnabled(get().musicEnabled);
-          tts.init();
           tts.setEnabled(get().soundEnabled);
-          // Restore previously chosen browser voices (if user picked one)
-          const { voiceRu, voiceEn, serverVoice } = get();
-          if (voiceRu) tts.setVoice('ru', voiceRu);
-          if (voiceEn) tts.setVoice('en', voiceEn);
-          if (serverVoice) tts.setDefaultVoiceKey(serverVoice);
           const s = get().state;
           if (s.phase === 'playing' || s.phase === 'event') {
             audio.startMusic(s.playerSide);
           }
-        },
-        setVoice: (lang, voiceName) => {
-          tts.init();
-          tts.setVoice(lang, voiceName);
-          if (lang === 'ru') set({ voiceRu: voiceName });
-          else set({ voiceEn: voiceName });
-        },
-        setServerVoice: (key) => {
-          tts.init();
-          tts.setDefaultVoiceKey(key);
-          tts.setUseServerTts(true);
-          set({ serverVoice: key });
         },
         toggleSound: () => {
           const v = !get().soundEnabled;
           set({ soundEnabled: v });
           audio.init();
           audio.setEnabled(v);
-          tts.init();
           tts.setEnabled(v);
           if (!v) tts.stop();
           if (v) haptics.tick();
@@ -233,14 +200,11 @@ export const useGame = create<GameStore>()(
           audio.init();
           audio.playSfx('side_pick');
           haptics.impact('medium');
-          // Init TTS too — this is the first user gesture
-          tts.init();
           tts.setEnabled(get().soundEnabled);
           const next = setSide(get().state, side);
           set({ state: next, lang: next.lang });
           audio.startMusic(side);
-          // TTS: announce the chosen side — voice matches side
-          // (Light → Svetlana female, Dark → Dmitry male)
+          // Announce chosen side with that side's voice
           const lang = get().lang;
           const sideName = tr(`side.${side}.name`, lang);
           const tmpl = lang === 'ru'
@@ -256,11 +220,9 @@ export const useGame = create<GameStore>()(
           const after = performPlayerAction(s, actionId);
           set({ state: after });
 
-          // NO SFX for action button presses — haptics only (per user request).
           haptics.impact(actionId === 'meditate' ? 'soft' : 'medium');
 
-          // TTS: speak the action's narrative description (the last log entry)
-          // Voice matches player's side
+          // Player narration — spoken by player's side voice
           const lang = get().lang;
           const narrText = lastLogText(after, lang);
           if (narrText) {
@@ -280,11 +242,11 @@ export const useGame = create<GameStore>()(
           set({ state: after });
           haptics.impact('light');
 
-          // TTS: speak the event's outcome text (neutral narrator)
+          // Event outcome — spoken by player's side voice
           const lang = get().lang;
           const outcomeText = lastLogText(after, lang);
           if (outcomeText) {
-            tts.speak(outcomeText, lang, { side: null });
+            tts.speak(outcomeText, lang, { side: before.playerSide });
           }
 
           scheduleAiIfNeeded();
@@ -315,9 +277,6 @@ export const useGame = create<GameStore>()(
         lang: s.lang,
         soundEnabled: s.soundEnabled,
         musicEnabled: s.musicEnabled,
-        voiceRu: s.voiceRu,
-        voiceEn: s.voiceEn,
-        serverVoice: s.serverVoice,
       }),
       merge: (persisted, current) => {
         const p = (persisted as Partial<GameStore>) || {};

@@ -9,7 +9,6 @@ import ActionPanel from '@/components/game/ActionPanel';
 import Chronicle from '@/components/game/Chronicle';
 import EventPrompt from '@/components/game/EventPrompt';
 import GameOver from '@/components/game/GameOver';
-import VoicePicker from '@/components/game/VoicePicker';
 import InstallButton from '@/components/game/InstallButton';
 import EpochIllustration from '@/components/game/EpochIllustration';
 import { Card } from '@/components/ui/card';
@@ -76,7 +75,6 @@ export default function Page() {
     return (
       <main className="relative">
         <div className="absolute top-4 right-4 z-10 flex gap-1">
-          <VoicePicker />
           <Button
             variant="ghost"
             size="sm"
@@ -140,7 +138,6 @@ export default function Page() {
               <span className="hidden md:inline text-xs">{tr('ui.how_to_play', lang)}</span>
             </Button>
             <InstallButton />
-            <VoicePicker />
             <Button
               variant="ghost"
               size="sm"
