@@ -25,6 +25,8 @@ interface GameStore {
   aiThinking: boolean;
   soundEnabled: boolean;
   musicEnabled: boolean;
+  voiceRu: string | null;
+  voiceEn: string | null;
   init: (lang?: Lang) => void;
   setLang: (lang: Lang) => void;
   chooseSide: (side: Side) => void;
@@ -35,11 +37,14 @@ interface GameStore {
   runAiIfNeeded: () => void;
   toggleSound: () => void;
   toggleMusic: () => void;
+  setVoice: (lang: Lang, voiceName: string) => void;
   /** Initialize audio — must be called from a user-gesture handler. */
   initAudio: () => void;
 }
 
-const AI_DELAY_MS = 700;
+// AI delay increased to give TTS time to finish narrating the player's action.
+// Without this, the AI's narration interrupts the player's narration.
+const AI_DELAY_MS = 1800;
 
 // Map ending IDs to SFX
 function sfxForEnding(endingId: string) {
@@ -158,12 +163,13 @@ export const useGame = create<GameStore>()(
         aiThinking: false,
         soundEnabled: true,
         musicEnabled: true,
+        voiceRu: null,
+        voiceEn: null,
         init: (lang = 'ru') => {
           set({ state: createInitialState(lang), lang, aiThinking: false });
         },
         setLang: (lang) => {
           set({ lang, state: { ...get().state, lang } });
-          // Update TTS to use the new language for subsequent speech
         },
         initAudio: () => {
           audio.init();
@@ -171,10 +177,20 @@ export const useGame = create<GameStore>()(
           audio.setMusicEnabled(get().musicEnabled);
           tts.init();
           tts.setEnabled(get().soundEnabled);
+          // Restore previously chosen voices (from persistence)
+          const { voiceRu, voiceEn } = get();
+          if (voiceRu) tts.setVoice('ru', voiceRu);
+          if (voiceEn) tts.setVoice('en', voiceEn);
           const s = get().state;
           if (s.phase === 'playing' || s.phase === 'event') {
             audio.startMusic(s.playerSide);
           }
+        },
+        setVoice: (lang, voiceName) => {
+          tts.init();
+          tts.setVoice(lang, voiceName);
+          if (lang === 'ru') set({ voiceRu: voiceName });
+          else set({ voiceEn: voiceName });
         },
         toggleSound: () => {
           const v = !get().soundEnabled;
@@ -282,6 +298,8 @@ export const useGame = create<GameStore>()(
         lang: s.lang,
         soundEnabled: s.soundEnabled,
         musicEnabled: s.musicEnabled,
+        voiceRu: s.voiceRu,
+        voiceEn: s.voiceEn,
       }),
       merge: (persisted, current) => {
         const p = (persisted as Partial<GameStore>) || {};
