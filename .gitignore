@@ -54,3 +54,6 @@ server.log
 /skills/
 # Screenshots (dev only)
 scripts/*.png
+
+# Stray TTS test files
+ru-RU-*Neural

@@ -27,6 +27,7 @@ interface GameStore {
   musicEnabled: boolean;
   voiceRu: string | null;
   voiceEn: string | null;
+  serverVoice: 'svetlana' | 'dmitry';
   init: (lang?: Lang) => void;
   setLang: (lang: Lang) => void;
   chooseSide: (side: Side) => void;
@@ -38,6 +39,7 @@ interface GameStore {
   toggleSound: () => void;
   toggleMusic: () => void;
   setVoice: (lang: Lang, voiceName: string) => void;
+  setServerVoice: (key: 'svetlana' | 'dmitry') => void;
   /** Initialize audio — must be called from a user-gesture handler. */
   initAudio: () => void;
 }
@@ -165,6 +167,7 @@ export const useGame = create<GameStore>()(
         musicEnabled: true,
         voiceRu: null,
         voiceEn: null,
+        serverVoice: 'svetlana',
         init: (lang = 'ru') => {
           set({ state: createInitialState(lang), lang, aiThinking: false });
         },
@@ -178,9 +181,10 @@ export const useGame = create<GameStore>()(
           tts.init();
           tts.setEnabled(get().soundEnabled);
           // Restore previously chosen browser voices (if user picked one)
-          const { voiceRu, voiceEn } = get();
+          const { voiceRu, voiceEn, serverVoice } = get();
           if (voiceRu) tts.setVoice('ru', voiceRu);
           if (voiceEn) tts.setVoice('en', voiceEn);
+          if (serverVoice) tts.setServerVoiceKey(serverVoice);
           const s = get().state;
           if (s.phase === 'playing' || s.phase === 'event') {
             audio.startMusic(s.playerSide);
@@ -191,6 +195,12 @@ export const useGame = create<GameStore>()(
           tts.setVoice(lang, voiceName);
           if (lang === 'ru') set({ voiceRu: voiceName });
           else set({ voiceEn: voiceName });
+        },
+        setServerVoice: (key) => {
+          tts.init();
+          tts.setServerVoiceKey(key);
+          tts.setUseServerTts(true);
+          set({ serverVoice: key });
         },
         toggleSound: () => {
           const v = !get().soundEnabled;
@@ -300,6 +310,7 @@ export const useGame = create<GameStore>()(
         musicEnabled: s.musicEnabled,
         voiceRu: s.voiceRu,
         voiceEn: s.voiceEn,
+        serverVoice: s.serverVoice,
       }),
       merge: (persisted, current) => {
         const p = (persisted as Partial<GameStore>) || {};

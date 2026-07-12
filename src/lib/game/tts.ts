@@ -22,10 +22,12 @@ class TtsEngine {
   private _selectedWebVoiceRu: SpeechSynthesisVoice | null = null;
   private _selectedWebVoiceEn: SpeechSynthesisVoice | null = null;
   private _gapMs = 500;
-  // Prefer server TTS (Google Translate) for Russian — sounds much better
+  // Prefer server TTS (Edge Neural) for Russian — sounds much better
   // than the default browser Russian voice. For English, both are decent,
   // but we still prefer server for consistency.
   private _useServerTts = true;
+  // Server voice key: 'svetlana' (female) or 'dmitry' (male)
+  private _serverVoiceKey = 'svetlana';
   // Track active audio elements so we can stop them
   private _activeAudios: HTMLAudioElement[] = [];
 
@@ -61,6 +63,12 @@ class TtsEngine {
   get useServerTts() { return this._useServerTts; }
   setUseServerTts(v: boolean) {
     this._useServerTts = v;
+    if (!v) this.clearQueue();
+  }
+
+  get serverVoiceKey() { return this._serverVoiceKey; }
+  setServerVoiceKey(v: string) {
+    this._serverVoiceKey = v;
     if (!v) this.clearQueue();
   }
 
@@ -179,7 +187,11 @@ class TtsEngine {
   private async _playServerTts(text: string, lang: Lang, opts?: { rate?: number; volume?: number }): Promise<boolean> {
     try {
       // Build URL with proper encoding
-      const params = new URLSearchParams({ text, lang });
+      const params = new URLSearchParams({
+        text,
+        lang,
+        voice: this._serverVoiceKey,
+      });
       const url = `/api/tts?${params.toString()}`;
       const audio = new Audio(url);
       audio.volume = Math.min(1, (opts?.volume ?? 0.95));
@@ -197,8 +209,8 @@ class TtsEngine {
         };
         audio.onended = () => finish(true);
         audio.onerror = () => finish(false);
-        // Safety timeout: if audio doesn't start in 8s, give up
-        setTimeout(() => finish(false), 8000);
+        // Safety timeout: if audio doesn't start in 15s, give up
+        setTimeout(() => finish(false), 15000);
         audio.play().catch(() => finish(false));
       });
     } catch {

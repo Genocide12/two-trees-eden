@@ -14,9 +14,32 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Mic2, Cloud, Volume2 } from 'lucide-react';
 
+type ServerVoiceKey = 'svetlana' | 'dmitry';
+
+interface ServerVoice {
+  key: ServerVoiceKey;
+  label: { ru: string; en: string };
+  desc: { ru: string; en: string };
+}
+
+const SERVER_VOICES: ServerVoice[] = [
+  {
+    key: 'svetlana',
+    label: { ru: 'Светлана (женский)', en: 'Svetlana (female)' },
+    desc: { ru: 'Естественный женский голос Microsoft Neural', en: 'Natural female Microsoft Neural voice' },
+  },
+  {
+    key: 'dmitry',
+    label: { ru: 'Дмитрий (мужской)', en: 'Dmitry (male)' },
+    desc: { ru: 'Естественный мужской голос Microsoft Neural', en: 'Natural male Microsoft Neural voice' },
+  },
+];
+
 export default function VoicePicker() {
   const lang = useGame((s) => s.lang);
   const initAudio = useGame((s) => s.initAudio);
+  const setServerVoice = useGame((s) => s.setServerVoice);
+  const storeServerVoice = useGame((s) => s.serverVoice);
   const [open, setOpen] = useState(false);
   const [useServer, setUseServer] = useState(true);
   const [voicesRu, setVoicesRu] = useState<SpeechSynthesisVoice[]>([]);
@@ -24,7 +47,6 @@ export default function VoicePicker() {
 
   useEffect(() => {
     if (!open) return;
-    // Defer setState to next tick to avoid cascading renders warning
     const t = setTimeout(() => {
       tts.init();
       setVoicesRu(tts.getVoicesForLang('ru'));
@@ -33,6 +55,16 @@ export default function VoicePicker() {
     return () => clearTimeout(t);
   }, [open]);
 
+  const handlePickServer = (key: ServerVoiceKey) => {
+    initAudio();
+    setServerVoice(key);  // persists to store
+    setUseServer(true);
+    const sample = lang === 'ru'
+      ? 'Да будет свет. И стал свет.'
+      : 'Let there be light. And there was light.';
+    tts.speak(sample, lang, { rate: 0.95 }, true);
+  };
+
   const handlePickWebVoice = (langCode: 'ru' | 'en', name: string) => {
     initAudio();
     tts.setVoice(langCode, name);
@@ -40,14 +72,6 @@ export default function VoicePicker() {
     setUseServer(false);
     const sample = langCode === 'ru' ? 'Да будет свет.' : 'Let there be light.';
     tts.speak(sample, langCode, { rate: 0.95 }, true);
-  };
-
-  const handlePickServer = () => {
-    initAudio();
-    tts.setUseServerTts(true);
-    setUseServer(true);
-    const sample = lang === 'ru' ? 'Да будет свет. И стал свет.' : 'Let there be light.';
-    tts.speak(sample, lang, { rate: 0.95 }, true);
   };
 
   return (
@@ -71,30 +95,36 @@ export default function VoicePicker() {
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-          {/* Server TTS option */}
+          {/* Server TTS options */}
           <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
               <Cloud className="w-3 h-3" />
-              {lang === 'ru' ? 'Серверный голос (рекомендуется)' : 'Server voice (recommended)'}
+              {lang === 'ru' ? 'Серверные голоса (рекомендуется)' : 'Server voices (recommended)'}
             </Label>
-            <button
-              onClick={handlePickServer}
-              className={`w-full text-left px-3 py-2.5 rounded text-xs border transition-all ${
-                useServer
-                  ? 'border-[#c9a85a] bg-[#c9a85a]/10 text-[#c9a85a]'
-                  : 'border-border hover:border-[#c9a85a]/40 hover:bg-muted/40'
-              }`}
-            >
-              <div className="font-serif flex items-center gap-2">
-                <Volume2 className="w-3.5 h-3.5" />
-                {lang === 'ru' ? 'Естественный русский (онлайн)' : 'Natural Russian (online)'}
-              </div>
-              <div className="text-[10px] text-muted-foreground mt-0.5">
-                {lang === 'ru'
-                  ? 'Качественный женский голос. Требует интернет.'
-                  : 'High-quality female voice. Requires internet.'}
-              </div>
-            </button>
+            {SERVER_VOICES.map((v) => (
+              <button
+                key={v.key}
+                onClick={() => handlePickServer(v.key)}
+                className={`w-full text-left px-3 py-2.5 rounded text-xs border transition-all ${
+                  useServer && storeServerVoice === v.key
+                    ? 'border-[#c9a85a] bg-[#c9a85a]/10 text-[#c9a85a]'
+                    : 'border-border hover:border-[#c9a85a]/40 hover:bg-muted/40'
+                }`}
+              >
+                <div className="font-serif flex items-center gap-2">
+                  <Volume2 className="w-3.5 h-3.5" />
+                  {v.label[lang]}
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">
+                  {v.desc[lang]}
+                </div>
+              </button>
+            ))}
+            <p className="text-[10px] text-muted-foreground/60 italic mt-1">
+              {lang === 'ru'
+                ? 'Microsoft Edge Neural голоса. Качество как у голосовых помощников. Требуют интернет.'
+                : 'Microsoft Edge Neural voices. Assistant-grade quality. Requires internet.'}
+            </p>
           </div>
 
           <div className="border-t border-border/40 pt-3">
