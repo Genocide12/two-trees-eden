@@ -28,6 +28,8 @@ export default function Page() {
   const state = useGame((s) => s.state);
   const init = useGame((s) => s.init);
   const resetToSideSelect = useGame((s) => s.resetToSideSelect);
+  const runAiIfNeeded = useGame((s) => s.runAiIfNeeded);
+  const aiThinking = useGame((s) => s.aiThinking);
   const [howToOpen, setHowToOpen] = useState(false);
 
   // Initialize on mount (loads persisted lang)
@@ -35,6 +37,21 @@ export default function Page() {
     init(lang);
     // one-shot init
   }, []);
+
+  // Safety-net: whenever we're in 'playing' phase and it's not the player's
+  // turn and AI isn't already thinking, kick the AI. This catches edge cases
+  // where the explicit scheduleAiIfNeeded() calls in the store didn't fire
+  // (e.g. event was resolved, language toggled, etc.).
+  useEffect(() => {
+    if (state.phase === 'playing' && !aiThinking) {
+      // Only run if it's actually AI's turn (engine tracks this)
+      const totalTurns = state.totalTurns;
+      const isPlayerTurn = totalTurns % 2 === 1;
+      if (!isPlayerTurn) {
+        runAiIfNeeded();
+      }
+    }
+  }, [state.phase, state.totalTurns, aiThinking, runAiIfNeeded]);
 
   // Side-select phase
   if (state.phase === 'side-select') {
