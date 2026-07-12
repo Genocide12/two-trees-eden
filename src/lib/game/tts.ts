@@ -1,17 +1,29 @@
 // Two Trees: Eden — Text-to-Speech engine
-// Primary: server-side TTS via /api/tts (Google Translate TTS, natural Russian voice)
-// Fallback: Web Speech API (browser built-in voices)
+// Primary: server-side TTS via /api/tts (Microsoft Edge Neural voices)
+// Fallback: Web Speech API (only if server fails 3 times — to avoid
+//           unexpectedly switching to the bad default browser Russian voice)
 
 'use client';
 
 type Lang = 'ru' | 'en';
+type Side = 'light' | 'dark' | null;
 
 interface QueueItem {
   text: string;
   lang: Lang;
+  side: Side;
   opts?: { rate?: number; pitch?: number; volume?: number };
   interrupt?: boolean;
 }
+
+// Voice mapping per side:
+//   Light → Svetlana (female, warm)
+//   Dark  → Dmitry   (male, deeper)
+// For English the same mapping picks AriaNeural (female) and GuyNeural (male).
+const SIDE_VOICE_KEY: Record<'light' | 'dark', 'svetlana' | 'dmitry'> = {
+  light: 'svetlana',
+  dark: 'dmitry',
+};
 
 class TtsEngine {
   private webVoices: SpeechSynthesisVoice[] = [];
@@ -22,14 +34,13 @@ class TtsEngine {
   private _selectedWebVoiceRu: SpeechSynthesisVoice | null = null;
   private _selectedWebVoiceEn: SpeechSynthesisVoice | null = null;
   private _gapMs = 500;
-  // Prefer server TTS (Edge Neural) for Russian — sounds much better
-  // than the default browser Russian voice. For English, both are decent,
-  // but we still prefer server for consistency.
   private _useServerTts = true;
-  // Server voice key: 'svetlana' (female) or 'dmitry' (male)
-  private _serverVoiceKey = 'svetlana';
-  // Track active audio elements so we can stop them
+  // Default voice key (used when no side specified, e.g. UI sounds)
+  private _defaultVoiceKey: 'svetlana' | 'dmitry' = 'svetlana';
   private _activeAudios: HTMLAudioElement[] = [];
+  // Consecutive server TTS failures — if too many, fall back to web speech
+  private _serverFailCount = 0;
+  private static readonly SERVER_FAIL_THRESHOLD = 3;
 
   init() {
     if (this._initialized) return;
@@ -57,7 +68,7 @@ class TtsEngine {
   }
 
   get available() {
-    return typeof window !== 'undefined' && (!!window.speechSynthesis || true);
+    return typeof window !== 'undefined';
   }
 
   get useServerTts() { return this._useServerTts; }
@@ -66,10 +77,9 @@ class TtsEngine {
     if (!v) this.clearQueue();
   }
 
-  get serverVoiceKey() { return this._serverVoiceKey; }
-  setServerVoiceKey(v: string) {
-    this._serverVoiceKey = v;
-    if (!v) this.clearQueue();
+  get defaultVoiceKey() { return this._defaultVoiceKey; }
+  setDefaultVoiceKey(v: 'svetlana' | 'dmitry') {
+    this._defaultVoiceKey = v;
   }
 
   get availableWebVoices(): SpeechSynthesisVoice[] {
@@ -107,19 +117,32 @@ class TtsEngine {
     return this.webVoices.filter((v) => v.lang.toLowerCase().startsWith(prefix));
   }
 
-  /** Enqueue a single utterance. */
-  speak(text: string, lang: Lang, opts?: { rate?: number; pitch?: number; volume?: number }, interrupt = false) {
-    if (!this._enabled) return;
-    this.init();
-    this._enqueue({ text, lang, opts, interrupt });
+  /** Resolve which voice key to use for a given side. */
+  private voiceKeyForSide(side: Side): 'svetlana' | 'dmitry' {
+    if (side === 'light') return SIDE_VOICE_KEY.light;
+    if (side === 'dark') return SIDE_VOICE_KEY.dark;
+    return this._defaultVoiceKey;
   }
 
-  speakSequence(texts: string[], lang: Lang, gap = 500) {
+  /** Enqueue a single utterance. `side` controls voice (Light=female, Dark=male). */
+  speak(text: string, lang: Lang, opts?: { rate?: number; pitch?: number; volume?: number; side?: Side }, interrupt = false) {
+    if (!this._enabled) return;
+    this.init();
+    this._enqueue({
+      text,
+      lang,
+      side: opts?.side ?? null,
+      opts: opts ? { rate: opts.rate, pitch: opts.pitch, volume: opts.volume } : undefined,
+      interrupt,
+    });
+  }
+
+  speakSequence(texts: string[], lang: Lang, side: Side = null, gap = 500) {
     if (!this._enabled || texts.length === 0) return;
     this.init();
     const oldGap = this._gapMs;
     this._gapMs = gap;
-    for (const t of texts) this._enqueue({ text: t, lang });
+    for (const t of texts) this._enqueue({ text: t, lang, side });
     setTimeout(() => { this._gapMs = oldGap; }, (texts.length * 3000) + gap);
   }
 
@@ -135,11 +158,9 @@ class TtsEngine {
   }
 
   private _stopAll() {
-    // Stop web speech
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
-    // Stop server audio
     for (const a of this._activeAudios) {
       try { a.pause(); a.src = ''; a.load(); } catch {}
     }
@@ -152,23 +173,23 @@ class TtsEngine {
 
     const item = this._queue.shift()!;
 
-    // Try server TTS first for Russian (much better voice)
-    if (this._useServerTts) {
+    // Try server TTS first (with retry on transient failures)
+    if (this._useServerTts && this._serverFailCount < TtsEngine.SERVER_FAIL_THRESHOLD) {
       this._speaking = true;
-      const ok = await this._playServerTts(item.text, item.lang, item.opts);
+      const ok = await this._playServerTts(item.text, item.lang, item.side, item.opts);
       if (ok) {
-        // Schedule next item after gap
+        this._serverFailCount = 0; // reset on success
         setTimeout(() => {
           this._speaking = false;
           this._pump();
         }, this._gapMs);
         return;
       }
-      // Fall through to web speech on failure
+      // Server failed — counter incremented in _playServerTts
     }
 
-    // Fallback: Web Speech API
-    if (typeof window !== 'undefined' && window.speechSynthesis) {
+    // Fallback: Web Speech API (only used if server is unavailable or broken)
+    if (typeof window !== 'undefined' && window.speechSynthesis && this.webVoices.length > 0) {
       this._speaking = true;
       this._playWebSpeech(item.text, item.lang, item.opts, () => {
         setTimeout(() => {
@@ -179,26 +200,22 @@ class TtsEngine {
       return;
     }
 
-    // No TTS available — skip
+    // No TTS available — skip silently (don't fall back to bad voice)
     this._speaking = false;
     setTimeout(() => this._pump(), 50);
   }
 
-  private async _playServerTts(text: string, lang: Lang, opts?: { rate?: number; volume?: number }): Promise<boolean> {
+  private async _playServerTts(text: string, lang: Lang, side: Side, opts?: { rate?: number; volume?: number }): Promise<boolean> {
+    const voiceKey = this.voiceKeyForSide(side);
     try {
-      // Build URL with proper encoding
-      const params = new URLSearchParams({
-        text,
-        lang,
-        voice: this._serverVoiceKey,
-      });
+      const params = new URLSearchParams({ text, lang, voice: voiceKey });
       const url = `/api/tts?${params.toString()}`;
       const audio = new Audio(url);
       audio.volume = Math.min(1, (opts?.volume ?? 0.95));
       audio.playbackRate = opts?.rate ?? 1.0;
       this._activeAudios.push(audio);
 
-      return new Promise<boolean>((resolve) => {
+      const ok = await new Promise<boolean>((resolve) => {
         let resolved = false;
         const finish = (ok: boolean) => {
           if (resolved) return;
@@ -209,11 +226,16 @@ class TtsEngine {
         };
         audio.onended = () => finish(true);
         audio.onerror = () => finish(false);
-        // Safety timeout: if audio doesn't start in 15s, give up
         setTimeout(() => finish(false), 15000);
         audio.play().catch(() => finish(false));
       });
+
+      if (!ok) {
+        this._serverFailCount++;
+      }
+      return ok;
     } catch {
+      this._serverFailCount++;
       return false;
     }
   }

@@ -91,12 +91,46 @@ export const T: Dict = {
   'res.doubt': { ru: 'Сомнение', en: 'Doubt' },
   'res.wrath': { ru: 'Гнев', en: 'Wrath' },
   'res.temptation': { ru: 'Искушение', en: 'Temptation' },
+  'res.faith.desc': { ru: 'Сила веры народа в Творца. Тратится на чудеса и заветы.', en: 'Power of people\'s faith in the Creator. Spent on miracles and covenants.' },
+  'res.mercy.desc': { ru: 'Милость, дарованная свыше. Тратится на пророков и исцеления.', en: 'Mercy granted from above. Spent on prophets and healing.' },
+  'res.grace.desc': { ru: 'Благодать Святого Духа. Тратится на чудеса, исцеления и заветы.', en: 'Grace of the Holy Spirit. Spent on miracles, healing, and covenants.' },
+  'res.doubt.desc': { ru: 'Сомнение, посеянное в сердцах. Тратится на ересь, чуму и ложь.', en: 'Doubt sown in hearts. Spent on heresy, plague, and deceit.' },
+  'res.wrath.desc': { ru: 'Гнев, излитый на землю. Тратится на чуму и ложь.', en: 'Wrath poured upon the earth. Spent on plague and deceit.' },
+  'res.temptation.desc': { ru: 'Искушение, шепчущее желания. Тратится на искушение и ложь.', en: 'Temptation whispering desires. Spent on temptation and deceit.' },
 
   // ---- Humanity ----
   'hum.population': { ru: 'Население', en: 'Population' },
   'hum.righteousness': { ru: 'Праведность', en: 'Righteousness' },
   'hum.corruption': { ru: 'Порочность', en: 'Corruption' },
   'hum.knowledge': { ru: 'Знание', en: 'Knowledge' },
+  'hum.population.desc': {
+    ru: 'Сколько людей живёт на земле. Падает от чумы и войны. Если опустится до 5 — Великая Тишина.',
+    en: 'How many people live on earth. Falls from plague and war. If it drops to 5 — Great Stillness.',
+  },
+  'hum.righteousness.desc': {
+    ru: 'Сила Света в сердцах людей. Растёт от чудес, пророков, заветов. Выше 75 — Эпоха Святых.',
+    en: 'Power of Light in human hearts. Grows from miracles, prophets, covenants. Above 75 — Epoch of Saints.',
+  },
+  'hum.corruption.desc': {
+    ru: 'Сила Тьмы в сердцах людей. Растёт от искушений, ереси, лжи. Выше 75 — Вечная Ночь.',
+    en: 'Power of Darkness in human hearts. Grows from temptation, heresy, deceit. Above 75 — Eternal Night.',
+  },
+  'hum.knowledge.desc': {
+    ru: 'Накопленные знания народа. Растёт от пророков и ереси. Влияет на исход суда.',
+    en: 'Accumulated knowledge of the people. Grows from prophets and heresy. Affects judgment outcome.',
+  },
+  'ui.humanity.desc': {
+    ru: 'Состояние человечества. Четыре чаши: население, праведность, порочность, знание. Наведи на каждую для подсказки.',
+    en: 'State of humanity. Four cups: population, righteousness, corruption, knowledge. Hover each for a hint.',
+  },
+  'ui.your_side.desc': {
+    ru: 'Твои ресурсы. Тратишь на деяния. Свет: Вера, Милость, Благодать. Тьма: Сомнение, Гнев, Искушение. Наведи для подсказки.',
+    en: 'Your resources. Spent on deeds. Light: Faith, Mercy, Grace. Dark: Doubt, Wrath, Temptation. Hover for hints.',
+  },
+  'ui.enemy_side.desc': {
+    ru: 'Ресурсы противника. Тратит на свои деяния против тебя. Та же чаша, что и у тебя — делится между вами.',
+    en: 'Adversary\'s resources. Spent on deeds against you. Same pool as yours — shared between you both.',
+  },
 
   // ---- Actions: Light ----
   'act.miracle.name': { ru: 'Чудо', en: 'Miracle' },
