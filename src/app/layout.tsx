@@ -38,6 +38,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
+      <head>
+        {/* Telegram WebApp SDK — loaded from Telegram's CDN when opened inside Telegram */}
+        <script
+          src="https://telegram.org/js/telegram-web-app.js"
+          async
+          strategy="beforeInteractive"
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >

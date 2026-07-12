@@ -40,6 +40,24 @@ export default function Chronicle() {
                 : isWorld
                 ? ''
                 : '';
+              // Translate epoch ids inside textParams (e.g. {epoch: 'antiquity'} → localized name)
+              const translatedParams: Record<string, string | number> | undefined = entry.textParams
+                ? Object.fromEntries(
+                    Object.entries(entry.textParams).map(([k, v]) => [
+                      k,
+                      typeof v === 'string' && v.startsWith('epoch.')
+                        ? tr(`epoch.${v.slice(6)}.name`, lang)
+                        : v,
+                    ]),
+                  )
+                : undefined;
+              // Special case: log.epoch_advance passes raw epoch id, translate it
+              if (entry.textParams?.epoch && typeof entry.textParams.epoch === 'string') {
+                const ep = entry.textParams.epoch;
+                if (!ep.startsWith('epoch.')) {
+                  (translatedParams as Record<string, string>).epoch = tr(`epoch.${ep}.name`, lang);
+                }
+              }
               return (
                 <motion.div
                   key={entry.id}
@@ -54,7 +72,7 @@ export default function Chronicle() {
                     <span className="text-muted-foreground/50 mr-1">
                       [{tr(`epoch.${entry.epoch}.name`, lang)} · {entry.turn}]
                     </span>
-                    {prefix}{tr(entry.textKey, lang, entry.textParams)}
+                    {prefix}{tr(entry.textKey, lang, translatedParams)}
                   </p>
                 </motion.div>
               );

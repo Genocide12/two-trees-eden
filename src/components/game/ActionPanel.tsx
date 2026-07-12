@@ -15,11 +15,18 @@ export default function ActionPanel() {
   const state = useGame((s) => s.state);
   const playerAct = useGame((s) => s.playerAct);
   const aiThinking = useGame((s) => s.aiThinking);
+  const initAudio = useGame((s) => s.initAudio);
 
   const playerSide = state.playerSide;
   const actions = ACTION_IDS_BY_SIDE[playerSide];
   const isLight = playerSide === 'light';
   const myTurn = isPlayerTurn(state) && !aiThinking && state.phase === 'playing';
+
+  const handleAction = (id: ActionId) => {
+    if (!myTurn) return;
+    initAudio();
+    playerAct(id);
+  };
 
   return (
     <div className="space-y-2">
@@ -61,7 +68,7 @@ export default function ActionPanel() {
                       : 'border-[#8b2424]/40 hover:border-[#c45656] hover:bg-[#8b2424]/5 cursor-pointer'
                     : 'border-border/40 opacity-50'
                 }`}
-                onClick={() => enabled && playerAct(id)}
+                onClick={() => enabled && handleAction(id)}
               >
                 <div className="flex items-center gap-2 mb-1">
                   {isMeditate ? (

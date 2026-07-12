@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Globe2, Info } from 'lucide-react';
+import { BookOpen, Globe2, Info, Volume2, VolumeX, Music, Music2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,11 @@ export default function Page() {
   const resetToSideSelect = useGame((s) => s.resetToSideSelect);
   const runAiIfNeeded = useGame((s) => s.runAiIfNeeded);
   const aiThinking = useGame((s) => s.aiThinking);
+  const soundEnabled = useGame((s) => s.soundEnabled);
+  const musicEnabled = useGame((s) => s.musicEnabled);
+  const toggleSound = useGame((s) => s.toggleSound);
+  const toggleMusic = useGame((s) => s.toggleMusic);
+  const initAudio = useGame((s) => s.initAudio);
   const [howToOpen, setHowToOpen] = useState(false);
 
   // Initialize on mount — only if no persisted state exists.
@@ -67,12 +72,30 @@ export default function Page() {
   if (state.phase === 'side-select') {
     return (
       <main className="relative">
-        <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <div className="absolute top-4 right-4 z-10 flex gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { initAudio(); toggleSound(); }}
+            className="text-muted-foreground hover:text-[#c9a85a] h-8 w-8 p-0"
+            aria-label="Toggle sound"
+          >
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { initAudio(); toggleMusic(); }}
+            className="text-muted-foreground hover:text-[#c9a85a] h-8 w-8 p-0"
+            aria-label="Toggle music"
+          >
+            {musicEnabled ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setLang(lang === 'ru' ? 'en' : 'ru')}
-            className="text-muted-foreground hover:text-[#c9a85a]"
+            className="text-muted-foreground hover:text-[#c9a85a] h-8"
           >
             <Globe2 className="w-4 h-4 mr-1" />
             {lang === 'ru' ? 'EN' : 'RU'}
@@ -111,6 +134,24 @@ export default function Page() {
             >
               <Info className="w-4 h-4 md:mr-1" />
               <span className="hidden md:inline text-xs">{tr('ui.how_to_play', lang)}</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { initAudio(); toggleSound(); }}
+              className="text-muted-foreground hover:text-[#c9a85a] h-8 w-8 p-0"
+              aria-label="Toggle sound"
+            >
+              {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { initAudio(); toggleMusic(); }}
+              className="text-muted-foreground hover:text-[#c9a85a] h-8 w-8 p-0"
+              aria-label="Toggle music"
+            >
+              {musicEnabled ? <Music className="w-4 h-4" /> : <Music2 className="w-4 h-4" />}
             </Button>
             <Button
               variant="ghost"

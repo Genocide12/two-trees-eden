@@ -10,10 +10,16 @@ export default function EventPrompt() {
   const lang = useGame((s) => s.lang);
   const state = useGame((s) => s.state);
   const resolve = useGame((s) => s.resolvePendingEvent);
+  const initAudio = useGame((s) => s.initAudio);
 
   if (state.phase !== 'event' || !state.pendingEvent) return null;
   const evt = state.pendingEvent;
   const opts = evt.options.filter((o) => !o.forSide || o.forSide === state.playerSide);
+
+  const handleResolve = (id: string) => {
+    initAudio();
+    resolve(id);
+  };
 
   return (
     <motion.div
@@ -32,7 +38,7 @@ export default function EventPrompt() {
           {opts.map((opt) => (
             <Button
               key={opt.id}
-              onClick={() => resolve(opt.id)}
+              onClick={() => handleResolve(opt.id)}
               variant="outline"
               className="w-full justify-start text-left border-border hover:border-[#c9a85a]/60 hover:bg-[#c9a85a]/5 py-3 h-auto"
             >

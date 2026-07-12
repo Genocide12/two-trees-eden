@@ -11,6 +11,13 @@ import { motion } from 'framer-motion';
 export default function SideSelector() {
   const lang = useGame((s) => s.lang);
   const chooseSide = useGame((s) => s.chooseSide);
+  const initAudio = useGame((s) => s.initAudio);
+
+  const handlePick = (side: Side) => {
+    // First user gesture — init audio so background music can play
+    initAudio();
+    chooseSide(side);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-10">
@@ -52,7 +59,7 @@ export default function SideSelector() {
               {tr('side.light.quote', lang)}
             </p>
             <Button
-              onClick={() => chooseSide('light')}
+              onClick={() => handlePick('light')}
               className="bg-[#c9a85a] hover:bg-[#d4ba6a] text-[#07060c] font-serif tracking-wide w-full"
             >
               {tr('side.choose', lang)}
@@ -80,7 +87,7 @@ export default function SideSelector() {
               {tr('side.dark.quote', lang)}
             </p>
             <Button
-              onClick={() => chooseSide('dark')}
+              onClick={() => handlePick('dark')}
               className="bg-[#8b2424] hover:bg-[#a33333] text-[#d6cbb8] font-serif tracking-wide w-full"
             >
               {tr('side.choose', lang)}
