@@ -174,6 +174,126 @@ export const T: Dict = {
     en: 'The strongest lie is the one believed out of weariness.',
   },
 
+  // ─── Action narratives (3 variants each — used in chronicle + TTS) ───
+  'act.miracle.narr.1': {
+    ru: 'Творец явил знамение. Народ замер в благоговении — и многие вспомнили имя своё.',
+    en: 'The Creator showed a sign. The people stood in awe — and many remembered their name.',
+  },
+  'act.miracle.narr.2': {
+    ru: 'Свет пролился с небес, и сердца ожгло. Чудо не убедило — но разбудило.',
+    en: 'Light poured from the heavens, searing the hearts. The miracle did not convince — but it woke them.',
+  },
+  'act.miracle.narr.3': {
+    ru: 'Чудо осенило землю. Народ преклонил колени — но ненадолго.',
+    en: 'A miracle overshadowed the land. The people knelt — but not for long.',
+  },
+  'act.prophet.narr.1': {
+    ru: 'Пророк возвысил голос среди толпы. Слова его пали как семя в сухую землю.',
+    en: 'A prophet raised his voice in the crowd. His words fell like seed on dry ground.',
+  },
+  'act.prophet.narr.2': {
+    ru: 'Голос пророка разрезал тишину — и народ прислушался вопреки себе.',
+    en: 'The prophet\'s voice cut the silence — and the people listened in spite of themselves.',
+  },
+  'act.prophet.narr.3': {
+    ru: 'Пророк сошёл с холма, неся слово, что переживёт века. Его слушали — и не слышали.',
+    en: 'A prophet descended the hill, carrying a word that would outlast ages. They listened — and did not hear.',
+  },
+  'act.heal.narr.1': {
+    ru: 'Боль отступила. Слабые поднялись с одра — и просили чуда ещё.',
+    en: 'Pain receded. The weak rose from their beds — and asked for one more miracle.',
+  },
+  'act.heal.narr.2': {
+    ru: 'Рука целителя коснулась недужных — и они восстали. Тело исцелилось быстро.',
+    en: 'The healer\'s hand touched the sick — and they rose. The body healed quickly.',
+  },
+  'act.heal.narr.3': {
+    ru: 'Милость снизошла на болящих. Тьма отхлынула — но не ушла.',
+    en: 'Mercy descended upon the suffering. The darkness receded — but did not leave.',
+  },
+  'act.covenant.narr.1': {
+    ru: 'Завет высечен в камне и в сердце. Народ понесёт его сквозь пустыни и века.',
+    en: 'A covenant was carved in stone and in the heart. The people would carry it through deserts and ages.',
+  },
+  'act.covenant.narr.2': {
+    ru: 'Слово Творца стало законом. Завет скрепил народ — но связал и его.',
+    en: 'The Creator\'s word became law. The covenant bound the people — but bound them as well.',
+  },
+  'act.covenant.narr.3': {
+    ru: 'Обет прозвучал — и небо услышало. Земля изменилась навсегда.',
+    en: 'The vow was spoken — and the heavens heard. The earth changed forever.',
+  },
+  'act.tempt.narr.1': {
+    ru: 'Искуситель прошептал желание в уши многих. И они услышали — против воли своей.',
+    en: 'The tempter whispered desire into many ears. And they heard — against their will.',
+  },
+  'act.tempt.narr.2': {
+    ru: 'Тень пала на сердце народа, и желание стало сильнее воли.',
+    en: 'A shadow fell upon the people\'s hearts, and desire grew stronger than will.',
+  },
+  'act.tempt.narr.3': {
+    ru: 'Шёпот змея проникал в сны, рождая хотения, которых не было наяву.',
+    en: 'The serpent\'s whisper crept into dreams, birthing desires that had no place in waking.',
+  },
+  'act.heresy.narr.1': {
+    ru: 'Слово писания извратилось в устах лжеучителя. И многие поверили — потому что хотели.',
+    en: 'The scripture twisted in the false teacher\'s mouth. And many believed — because they wanted to.',
+  },
+  'act.heresy.narr.2': {
+    ru: 'Ересь расползлась, как трещина в камне. Храм стоял — но уже был пуст.',
+    en: 'Heresy spread like a crack in stone. The temple stood — but was already empty.',
+  },
+  'act.heresy.narr.3': {
+    ru: 'Сомнение вошло в храм — и храм перестал быть храмом.',
+    en: 'Doubt entered the temple — and the temple was a temple no longer.',
+  },
+  'act.plague.narr.1': {
+    ru: 'Мор пришёл с ветром. Народ возроптал на небо — и небо промолчало.',
+    en: 'Pestilence came on the wind. The people cursed the heavens — and the heavens were silent.',
+  },
+  'act.plague.narr.2': {
+    ru: 'Чума косила города, не разбирая праведных и грешных. В этом был её урок.',
+    en: 'Plague reaped the cities, sorting neither righteous nor wicked. In that lay its lesson.',
+  },
+  'act.plague.narr.3': {
+    ru: 'Болезнь пришла как испытание — но мало кто понял её язык.',
+    en: 'Sickness came as a trial — but few understood its language.',
+  },
+  'act.deceit.narr.1': {
+    ru: 'Ложь облеклась в правду. Народ поверил — и заблудился в трёх соснах.',
+    en: 'A lie clothed itself in truth. The people believed — and lost their way among three pines.',
+  },
+  'act.deceit.narr.2': {
+    ru: 'Подмена совершилась тихо. Многие приняли тень за свет — и не заметили.',
+    en: 'The substitution was made in silence. Many mistook shadow for light — and did not notice.',
+  },
+  'act.deceit.narr.3': {
+    ru: 'Ложь укоренилась так глубоко, что истина стала казаться ересью.',
+    en: 'The lie took root so deep that truth began to look like heresy.',
+  },
+  'act.meditate.narr.1': {
+    ru: 'Тишина. В ней — источник всех слов.',
+    en: 'Silence. In it — the source of all words.',
+  },
+  'act.meditate.narr.2': {
+    ru: 'Безмолвие собрало силы. Сердце вспомнило покой.',
+    en: 'Stillness gathered strength. The heart remembered peace.',
+  },
+  'act.meditate.narr.3': {
+    ru: 'Молчание стало словом — самым веским из всех.',
+    en: 'Silence became a word — the weightiest of all.',
+  },
+
+  // AI action prefixes (spoken when AI acts)
+  'ai.prefix.light': {
+    ru: 'Свет обращается к деянию: ',
+    en: 'Light turns to its deed: ',
+  },
+  'ai.prefix.dark': {
+    ru: 'Тьма обращается к деянию: ',
+    en: 'Darkness turns to its deed: ',
+  },
+
   // ---- Action: Meditate (common to both sides) ----
   'act.meditate.name': { ru: 'Созерцать', en: 'Meditate' },
   'act.meditate.desc': {

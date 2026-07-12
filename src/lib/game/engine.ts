@@ -155,6 +155,12 @@ export function canPlayerAct(state: GameState, actionId: ActionId): boolean {
   return canAfford(state.resources, def.cost);
 }
 
+// Pick a random narrative variant key for an action (1..3)
+export function pickNarrativeKey(actionId: ActionId): string {
+  const n = 1 + Math.floor(Math.random() * 3);
+  return `act.${actionId}.narr.${n}`;
+}
+
 export function performPlayerAction(state: GameState, actionId: ActionId): GameState {
   if (state.phase !== 'playing') return state;
   if (!canPlayerAct(state, actionId)) return state;
@@ -173,7 +179,9 @@ export function performPlayerAction(state: GameState, actionId: ActionId): GameS
     newHumanity = applyHumanity(state.humanity, def.effects);
   }
 
-  const entry = logEntry(state, 'system', state.playerSide, def.nameKey);
+  // Use a random narrative variant instead of just the action name
+  const narrKey = pickNarrativeKey(actionId);
+  const entry = logEntry(state, 'system', state.playerSide, narrKey);
   const next: GameState = {
     ...state,
     resources: newResources,
@@ -207,11 +215,13 @@ export function performAiTurn(state: GameState, chosenAction: ActionId | null): 
     newHumanity = applyHumanity(state.humanity, def.effects);
   }
 
+  // Use a random narrative variant for AI too
+  const narrKey = pickNarrativeKey(action);
   return resolveTurnEnd({
     ...state,
     resources: newResources,
     humanity: newHumanity,
-    log: [...state.log, logEntry(state, 'system', state.aiSide, def.nameKey)],
+    log: [...state.log, logEntry(state, 'system', state.aiSide, narrKey)],
     updatedAt: Date.now(),
   });
 }
