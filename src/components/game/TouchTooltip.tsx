@@ -127,8 +127,11 @@ export default function TouchTooltip({
       <TooltipContent
         side={side}
         align="center"
+        sideOffset={6}
         // collisionPadding keeps tooltip inside viewport on small screens
         collisionPadding={16}
+        // sticky="always" forces re-positioning if it doesn't fit
+        sticky="always"
         // Avoid the tooltip closing on pointer leave (we manage state ourselves)
         onPointerDownOutside={(e) => e.preventDefault()}
         className="max-w-[240px] text-xs leading-relaxed bg-card border-[#c9a85a]/40 shadow-lg pointer-events-none z-50"

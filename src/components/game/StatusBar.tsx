@@ -12,7 +12,7 @@ import TouchTooltip from './TouchTooltip';
 function Bar({ value, label, desc, icon, color }: { value: number; label: string; desc: string; icon: React.ReactNode; color: string }) {
   return (
     <TouchTooltip
-      side="right"
+      side="top"
       className="cursor-help"
       content={
         <>
@@ -68,7 +68,7 @@ function ResourcePill({ value, label, desc, icon, color }: { value: number; labe
 function SectionHeader({ title, desc, color }: { title: string; desc: string; color: string }) {
   return (
     <TouchTooltip
-      side="right"
+      side="top"
       className="inline-block cursor-help"
       content={<p className="text-foreground/80">{desc}</p>}
     >
