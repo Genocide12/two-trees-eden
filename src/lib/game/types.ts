@@ -23,7 +23,9 @@ export type ActionId =
   | 'tempt'
   | 'heresy'
   | 'plague'
-  | 'deceit';
+  | 'deceit'
+  // Common
+  | 'meditate';
 
 export interface Resources {
   faith: number;       // Свет: Вера / Faith

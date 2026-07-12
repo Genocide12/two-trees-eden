@@ -11,7 +11,7 @@ import type {
   LogEntry,
   GameEvent,
 } from './types';
-import { ACTIONS, canAfford } from './actions';
+import { ACTIONS, canAfford, MEDITATE_GAIN } from './actions';
 import { EVENTS, eventsForEpoch } from './events';
 import { EPOCH_ORDER, ENDINGS_BY_ID, tr } from './i18n';
 
@@ -30,6 +30,12 @@ const STARTING_RESOURCES_LIGHT: Resources = {
 };
 const STARTING_RESOURCES_DARK: Resources = {
   faith: 0, mercy: 0, grace: 0, doubt: 4, wrath: 4, temptation: 3,
+};
+// Both sides start with their full resource pools — player and AI draw from
+// their respective sides. The state.resources object holds all 6 fields.
+const STARTING_RESOURCES_FULL: Resources = {
+  faith: 4, mercy: 4, grace: 3,
+  doubt: 4, wrath: 4, temptation: 3,
 };
 
 const STARTING_HUMANITY: Humanity = {
@@ -66,9 +72,8 @@ export function createInitialState(lang: Lang = 'ru'): GameState {
 
 export function setSide(state: GameState, side: Side): GameState {
   const aiSide: Side = side === 'light' ? 'dark' : 'light';
-  const resources: Resources = side === 'light'
-    ? { ...STARTING_RESOURCES_LIGHT }
-    : { ...STARTING_RESOURCES_DARK };
+  // Both sides start with their full resource pools so AI can actually act.
+  const resources: Resources = { ...STARTING_RESOURCES_FULL };
   const next: GameState = {
     ...state,
     playerSide: side,
@@ -144,6 +149,8 @@ function logEntry(state: GameState, actor: LogEntry['actor'], side: Side, textKe
 export function canPlayerAct(state: GameState, actionId: ActionId): boolean {
   const def = ACTIONS[actionId];
   if (!def) return false;
+  // Meditate is always available (no cost, no side restriction)
+  if (actionId === 'meditate') return true;
   if (def.side !== state.playerSide) return false;
   return canAfford(state.resources, def.cost);
 }
@@ -152,8 +159,20 @@ export function performPlayerAction(state: GameState, actionId: ActionId): GameS
   if (state.phase !== 'playing') return state;
   if (!canPlayerAct(state, actionId)) return state;
   const def = ACTIONS[actionId];
-  const newResources = applyCost(state.resources, def.cost, -1);
-  const newHumanity = applyHumanity(state.humanity, def.effects);
+
+  let newResources = applyCost(state.resources, def.cost, -1);
+  let newHumanity = state.humanity;
+
+  if (actionId === 'meditate') {
+    // Restore +2 to each of the player's primary resources
+    const gain = MEDITATE_GAIN[state.playerSide];
+    (Object.keys(gain) as (keyof Resources)[]).forEach((k) => {
+      newResources[k] = (newResources[k] ?? 0) + (gain[k] ?? 0);
+    });
+  } else {
+    newHumanity = applyHumanity(state.humanity, def.effects);
+  }
+
   const entry = logEntry(state, 'system', state.playerSide, def.nameKey);
   const next: GameState = {
     ...state,
@@ -165,31 +184,29 @@ export function performPlayerAction(state: GameState, actionId: ActionId): GameS
   return resolveTurnEnd(next);
 }
 
-// AI takes its action. If it cannot afford anything, it skips (and gains a small recovery).
+// AI takes its action. If it cannot afford anything, it meditates to recover.
 export function performAiTurn(state: GameState, chosenAction: ActionId | null): GameState {
   if (state.phase !== 'playing') return state;
-  if (chosenAction == null) {
-    // Recovery: AI gains 1 of its primary resource
-    const recovery: Partial<Resources> = state.aiSide === 'light'
-      ? { faith: 1 }
-      : { doubt: 1 };
-    const recovered: Resources = { ...state.resources, ...Object.fromEntries(
-      Object.entries(recovery).map(([k, v]) => [k, (state.resources[k as keyof Resources] ?? 0) + (v ?? 0)]),
-    ) } as Resources;
-    return resolveTurnEnd({
-      ...state,
-      resources: recovered,
-      log: [...state.log, logEntry(state, 'system', state.aiSide, 'log.ai_pass')],
-      updatedAt: Date.now(),
+  // If AI has no chosen action, default to meditate (always available)
+  const action: ActionId = chosenAction ?? 'meditate';
+  const def = ACTIONS[action];
+
+  let newResources = applyCost(state.resources, def.cost, -1);
+  let newHumanity = state.humanity;
+
+  if (action === 'meditate') {
+    const gain = MEDITATE_GAIN[state.aiSide];
+    (Object.keys(gain) as (keyof Resources)[]).forEach((k) => {
+      newResources[k] = (newResources[k] ?? 0) + (gain[k] ?? 0);
     });
+  } else {
+    if (!canAfford(state.resources, def.cost)) {
+      // Fallback: meditate
+      return performAiTurn(state, 'meditate');
+    }
+    newHumanity = applyHumanity(state.humanity, def.effects);
   }
-  const def = ACTIONS[chosenAction];
-  if (!canAfford(state.resources, def.cost)) {
-    // Fallback: skip
-    return performAiTurn(state, null);
-  }
-  const newResources = applyCost(state.resources, def.cost, -1);
-  const newHumanity = applyHumanity(state.humanity, def.effects);
+
   return resolveTurnEnd({
     ...state,
     resources: newResources,
@@ -209,9 +226,13 @@ function resolveTurnEnd(state: GameState): GameState {
   // We use a simple model: totalTurns increments each action (player or ai).
   // After totalTurns reaches TURNS_PER_EPOCH * 2, advance epoch.
   const newTotal = state.totalTurns + 1;
+  // `turn` is the round number within the current epoch (1, 2, or 3).
+  // Player and AI each act once per round, so turn = ceil(totalTurns / 2).
+  const newTurn = Math.ceil(newTotal / 2);
   let next: GameState = {
     ...state,
     totalTurns: newTotal,
+    turn: newTurn,
     updatedAt: Date.now(),
   };
 
@@ -232,7 +253,10 @@ function resolveTurnEnd(state: GameState): GameState {
     };
   }
 
-  // Random event with low probability on player turn (when totalTurns is even)
+  // Random event triggers after every 2nd round (= 4 totalTurns).
+  // Only trigger if it's the player's turn next (odd totalTurns after increment
+  // means AI just acted → player's turn → player should see the event).
+  // We check totalTurns % 4 === 0 so events are spread out.
   if (next.phase === 'playing' && next.totalTurns % 4 === 0) {
     const evt = pickRandomEventForEpoch(next.epoch);
     if (evt) {
@@ -250,14 +274,15 @@ function advanceEpoch(state: GameState): GameState {
     return state;
   }
   const nextEpoch = EPOCH_ORDER[idx + 1];
-  // Each epoch grants the player +1 to all primary resources of their side
-  const gainLight: Partial<Resources> = { faith: 1, mercy: 1, grace: 1 };
-  const gainDark: Partial<Resources> = { doubt: 1, wrath: 1, temptation: 1 };
-  const gain = state.playerSide === 'light' ? gainLight : gainDark;
+  // Each epoch grants BOTH sides +1 to all their primary resources.
+  // This keeps the AI competitive as the game progresses.
   const newRes: Resources = { ...state.resources };
-  (Object.keys(gain) as (keyof Resources)[]).forEach((k) => {
-    newRes[k] = (newRes[k] ?? 0) + (gain[k] ?? 0);
-  });
+  newRes.faith = (newRes.faith ?? 0) + 1;
+  newRes.mercy = (newRes.mercy ?? 0) + 1;
+  newRes.grace = (newRes.grace ?? 0) + 1;
+  newRes.doubt = (newRes.doubt ?? 0) + 1;
+  newRes.wrath = (newRes.wrath ?? 0) + 1;
+  newRes.temptation = (newRes.temptation ?? 0) + 1;
   return {
     ...state,
     epoch: nextEpoch,

@@ -174,6 +174,17 @@ export const T: Dict = {
     en: 'The strongest lie is the one believed out of weariness.',
   },
 
+  // ---- Action: Meditate (common to both sides) ----
+  'act.meditate.name': { ru: 'Созерцать', en: 'Meditate' },
+  'act.meditate.desc': {
+    ru: 'Безмолвно собраться с силами. Восстанавливает +2 к каждому ресурсу твоей стороны.',
+    en: 'Gather strength in silence. Restores +2 to each resource of your side.',
+  },
+  'act.meditate.flavor': {
+    ru: 'Молчание — тоже слово. Иногда — самое веское.',
+    en: 'Silence is also a word. Sometimes — the weightiest.',
+  },
+
   // ---- Endings ----
   'end.saints.title': { ru: 'Эпоха Святых', en: 'Epoch of Saints' },
   'end.saints.text': {

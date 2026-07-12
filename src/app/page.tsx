@@ -32,10 +32,20 @@ export default function Page() {
   const aiThinking = useGame((s) => s.aiThinking);
   const [howToOpen, setHowToOpen] = useState(false);
 
-  // Initialize on mount (loads persisted lang)
+  // Initialize on mount — only if no persisted state exists.
+  // The Zustand persist middleware rehydrates asynchronously, so we check
+  // on mount: if phase is still 'side-select' from the initial createInitialState
+  // call AND we haven't rehydrated yet, we leave it alone (persist will restore).
+  // We only call init() as a fallback if no persisted state exists.
   useEffect(() => {
-    init(lang);
-    // one-shot init
+    // Check if persisted state exists in localStorage
+    const persisted = typeof window !== 'undefined'
+      ? localStorage.getItem('two-trees-eden')
+      : null;
+    if (!persisted) {
+      init(lang);
+    }
+    // one-shot init fallback
   }, []);
 
   // Safety-net: whenever we're in 'playing' phase and it's not the player's

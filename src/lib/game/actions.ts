@@ -76,11 +76,27 @@ export const ACTIONS: Record<ActionId, ActionDef> = {
     descKey: 'act.deceit.desc',
     flavorKey: 'act.deceit.flavor',
   },
+  meditate: {
+    id: 'meditate',
+    // side is set dynamically — see getMeditateAction(side)
+    side: 'light',
+    cost: {},
+    effects: {},
+    nameKey: 'act.meditate.name',
+    descKey: 'act.meditate.desc',
+    flavorKey: 'act.meditate.flavor',
+  },
 };
 
 export const ACTION_IDS_BY_SIDE: Record<'light' | 'dark', ActionId[]> = {
-  light: ['miracle', 'prophet', 'heal', 'covenant'],
-  dark: ['tempt', 'heresy', 'plague', 'deceit'],
+  light: ['miracle', 'prophet', 'heal', 'covenant', 'meditate'],
+  dark: ['tempt', 'heresy', 'plague', 'deceit', 'meditate'],
+};
+
+// Resources recovered by meditating, per side
+export const MEDITATE_GAIN: Record<'light' | 'dark', Partial<Record<keyof import('./types').Resources, number>>> = {
+  light: { faith: 2, mercy: 2, grace: 2 },
+  dark: { doubt: 2, wrath: 2, temptation: 2 },
 };
 
 export function canAfford(

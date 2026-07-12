@@ -120,8 +120,25 @@ export const useGame = create<GameStore>()(
     },
     {
       name: 'two-trees-eden',
-      // Only persist lang, not full game state (game can be reset on reload)
-      partialize: (s) => ({ lang: s.lang }),
+      // Persist the full game state so refresh doesn't lose progress.
+      // The store rehydrates `state`, `lang`, and `aiThinking` (always false on load).
+      partialize: (s) => ({
+        state: s.state,
+        lang: s.lang,
+        // Don't persist aiThinking — always reset to false on rehydrate
+      }),
+      // On rehydrate, ensure aiThinking is false (in case it was true when saved)
+      merge: (persisted, current) => {
+        const p = (persisted as Partial<GameStore>) || {};
+        return {
+          ...current,
+          ...p,
+          aiThinking: false, // always reset on load
+          state: p.state
+            ? { ...p.state, phase: p.state.phase === 'event' ? 'playing' : p.state.phase, pendingEvent: null }
+            : current.state,
+        };
+      },
     },
   ),
 );
