@@ -42,7 +42,7 @@ const STARTING_HUMANITY: Humanity = {
   population: 50,
   righteousness: 50,
   corruption: 50,
-  knowledge: 10,
+  knowledge: 30,
 };
 
 let _idCounter = 0;

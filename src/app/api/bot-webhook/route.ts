@@ -25,14 +25,14 @@ const EPOCH_NAMES: Record<string, { ru: string; en: string }> = {
 const TURNS_PER_EPOCH = 3;
 
 const ACTIONS: Record<string, { side: 'light'|'dark', cost: Record<string, number>, effects: Record<string, number> }> = {
-  miracle:  { side: 'light', cost: { faith: 2, grace: 1 }, effects: { righteousness: 8, corruption: -4, population: 2 } },
-  prophet:  { side: 'light', cost: { faith: 1, mercy: 2 }, effects: { righteousness: 6, knowledge: 3, corruption: -2 } },
-  heal:     { side: 'light', cost: { mercy: 2, grace: 1 }, effects: { population: 6, righteousness: 3 } },
-  covenant: { side: 'light', cost: { faith: 2, mercy: 2, grace: 2 }, effects: { righteousness: 10, knowledge: 4, population: 2, corruption: -6 } },
-  tempt:    { side: 'dark', cost: { temptation: 2, doubt: 1 }, effects: { corruption: 7, righteousness: -4 } },
-  heresy:   { side: 'dark', cost: { doubt: 2, temptation: 1 }, effects: { corruption: 6, knowledge: 4, righteousness: -3 } },
-  plague:   { side: 'dark', cost: { wrath: 2, doubt: 1 }, effects: { population: -8, corruption: 5, righteousness: -2 } },
-  deceit:   { side: 'dark', cost: { temptation: 2, wrath: 1, doubt: 1 }, effects: { corruption: 9, knowledge: -2, righteousness: -5, population: -2 } },
+  miracle:  { side: 'light', cost: { faith: 2, grace: 1 }, effects: { righteousness: 6, corruption: -3, population: 4, knowledge: 2 } },
+  prophet:  { side: 'light', cost: { faith: 1, mercy: 2 }, effects: { righteousness: 4, knowledge: 6, corruption: -2, population: 2 } },
+  heal:     { side: 'light', cost: { mercy: 2, grace: 1 }, effects: { population: 8, righteousness: 3, knowledge: 1, corruption: -1 } },
+  covenant: { side: 'light', cost: { faith: 2, mercy: 2, grace: 2 }, effects: { righteousness: 7, knowledge: 4, population: 3, corruption: -4 } },
+  tempt:    { side: 'dark', cost: { temptation: 2, doubt: 1 }, effects: { corruption: 6, righteousness: -3, population: -2, knowledge: 1 } },
+  heresy:   { side: 'dark', cost: { doubt: 2, temptation: 1 }, effects: { corruption: 5, knowledge: 6, righteousness: -2, population: -1 } },
+  plague:   { side: 'dark', cost: { wrath: 2, doubt: 1 }, effects: { population: -10, corruption: 4, righteousness: -3, knowledge: 2 } },
+  deceit:   { side: 'dark', cost: { temptation: 2, wrath: 1, doubt: 1 }, effects: { corruption: 7, righteousness: -4, knowledge: -1, population: -3 } },
   meditate: { side: 'light', cost: {}, effects: {} },
 };
 
@@ -113,7 +113,7 @@ function createInitialState(lang: 'ru'|'en'): GameState {
     turn: 1,
     totalTurns: 1,
     resources: { faith: 4, mercy: 4, grace: 3, doubt: 4, wrath: 4, temptation: 3 },
-    humanity: { population: 50, righteousness: 50, corruption: 50, knowledge: 10 },
+    humanity: { population: 50, righteousness: 50, corruption: 50, knowledge: 30 },
     log: [],
     phase: 'side-select',
     endingId: null,
